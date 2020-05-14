@@ -24,7 +24,7 @@ has three lives. Control is carried out with the mouse. Pause/Continuation - mou
 The games was written in the CodeHS JavaScript Library in the CodeHS editor, and then, using the special CodeHS 
 library, it was automatically converted for external use.<br>
 
-The full documentation of editor - by visiting <a href="codehs.com/docs" target="_blank">codehs.com/docs</a><br>
+The full documentation of editor - by visiting codehs.com/docs <br>
 
 Short documentation is in the file  CodeHS.pdf<br>
 
