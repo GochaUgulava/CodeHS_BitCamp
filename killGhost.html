@@ -1,0 +1,364 @@
+
+<html>
+<head>
+<title>Kill Ghost!</title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+<script type="text/javascript" src="https://static.codehs.com/gulp/e0ca42a1ffe3827e1f4e87d672f73133399f9f95/chs-js-lib/chs.js"></script>
+
+
+<style>
+canvas {
+    border: 1px solid black;
+    display: inline-block;
+    vertical-align: top;
+}
+
+pre {
+    border: 1px solid black;
+    display: inline-block;
+    width: 400px;
+    height: 500px;
+    background-color: #F5F5F5;
+}
+</style>
+
+</head>
+
+<body>
+<h1>Kill Ghost!</h1>
+
+
+
+<canvas
+width="400"
+height="500"
+class="codehs-editor-canvas"></canvas>
+<!--<pre id="console"></pre>-->
+
+<script>
+window.onload = function() {
+
+var HEAD_RADIUS = 20;
+var OFFSET = 50;
+var DELAY = 40;
+
+/* Ghost */
+var head;
+var body;
+var footLeft;
+var footCenter;
+var footRight;
+var eyeLeft;
+var eyeRight;
+var pupilLeft;
+var pupilRight;
+var color;
+
+/* Ghost moving */
+var dx = 2;
+var dy = 5;
+var startdx = 2;
+var enddx = 7;
+
+/* Canon */
+var strength = 0;
+var scale;
+var canon;
+var angle = 0;
+var ball;
+
+/* score */
+var score = 0;
+var ghostPrice = 10;
+var ballsLeft = 20;
+var scoreText;
+var leftText;
+
+
+function start(){
+    
+    initialize();
+
+    keyDownMethod(keyDown);
+    mouseMoveMethod(mouseMove);
+    mouseClickMethod(mouseClick);
+    
+    setTimer(moveGhost, DELAY);
+
+}
+
+function initialize(){
+    
+    var line1 = new Line(0, getHeight()-OFFSET, getWidth(), getHeight()-OFFSET);
+    add(line1);
+    var line2 = new Line(0, getHeight()-OFFSET/2, getWidth(), getHeight()-OFFSET/2);
+    add(line2);
+    
+    var text = new Text("FOR QUIT - PRESS SPACE");
+    text.setColor(Color.black);
+    text.setPosition(getWidth()/2 - text.getWidth()/3 , getHeight()-5);
+    text.setFont("12pt Arial");
+    add(text);
+    
+    canon = new Rectangle(50, 10);
+    canon.setColor(Color.purple);
+    canon.setPosition(1, getHeight()-OFFSET-30); 
+    add(canon);
+    
+    showScore();
+    showLeft();
+    
+    var posX = Randomizer.nextInt(HEAD_RADIUS, getWidth()-HEAD_RADIUS);
+    var posY = HEAD_RADIUS;
+    color = Randomizer.nextColor();
+    
+    createGhost(posX, posY, color);
+    drawGhost();
+}
+
+function keyDown(e){
+    if (e.keyCode == Keyboard.SPACE){
+        gameOver();
+    }
+}
+
+function mouseMove(e){
+    remove(scale);
+    var posX = e.getX();
+    var posY = e.getY();
+    if (posX<0){
+        posX = 0;
+    }
+    if (posX>getWidth()){
+        posX = getWidth();
+    }
+    if (posY<getHeight()/7){
+        posY = 0;
+    }
+    if (posY>4*getHeight()/5){        
+        posY = 4*getHeight()/5;
+    }
+    
+    scale = new Rectangle(posX, OFFSET/2);
+    scale.setPosition(0, getHeight()- OFFSET);
+    scale.setColor(Color.orange);
+    add(scale);
+    
+    angle = Math.round(90-90*posY/(4*getHeight()/5));
+    strength = Math.round(10*posX/getWidth())+1;
+
+    canon.setRotation(-angle);
+
+}
+
+function mouseClick(e){
+    
+    mouseMoveMethod(pass);
+    mouseClickMethod(pass);
+    ballsLeft--;
+    showLeft();
+    var x0 = 25 + 25*Math.cos(Math.PI*(-angle)/180);
+    var y0 = (getHeight()-OFFSET-30) + 25*Math.sin(Math.PI*(-angle)/180);
+    ball = drawCircle(5, Color.purple, x0, y0);
+    add(ball);
+
+    setTimer(moveBall, DELAY*2);
+    
+}
+
+function moveBall(){
+  
+    var balldx = strength * Math.cos(Math.PI*(-angle)/180);
+    var balldy = strength * Math.sin(Math.PI*(-angle)/180);
+    ball.move(balldx, balldy);
+
+     
+    var elem = getElementAt(ball.getX(), ball.getY());
+    if(elem == head || elem == body || elem == footLeft ||
+                    elem == footCenter || elem == footRight){
+        score += ghostPrice;
+        showScore();
+        if (ballsLeft==0){
+            gameOver();
+        }else{
+            gameReset();
+        }
+    } 
+     
+        
+    if(ball.getX()>getWidth() || ball.getY()<0){
+        remove(ball);
+        stopTimer(moveBall);
+        mouseMoveMethod(mouseMove);
+        mouseClickMethod(mouseClick);
+        if (ballsLeft==0){
+            gameOver();
+        }
+    }
+    
+}
+
+function createGhost(posX, posY, color){
+    head = drawCircle(HEAD_RADIUS, color,
+                          posX, posY);
+    body = drawRectangle(2*HEAD_RADIUS, HEAD_RADIUS,
+                             color, posX-HEAD_RADIUS, posY);
+    footLeft = drawCircle(HEAD_RADIUS/3, color,
+                              posX-2*HEAD_RADIUS/3, posY+HEAD_RADIUS);
+    footCenter = drawCircle(HEAD_RADIUS/3, color,
+                              posX, posY+HEAD_RADIUS);
+    footRight = drawCircle(HEAD_RADIUS/3, color,
+                              posX+2*HEAD_RADIUS/3, posY+HEAD_RADIUS);
+    eyeLeft = drawCircle(HEAD_RADIUS/3, Color.white,
+                              posX-HEAD_RADIUS/3, posY);
+    eyeRight = drawCircle(HEAD_RADIUS/3, Color.white,
+                              posX+HEAD_RADIUS/3, posY);                      
+    pupilLeft = drawCircle(HEAD_RADIUS/8, Color.blue,
+                                posX-HEAD_RADIUS/5, posY);
+    pupilRight = drawCircle(HEAD_RADIUS/8, Color.blue,
+                                posX+HEAD_RADIUS/2, posY);
+}
+
+function drawGhost(){
+    add(head);
+    add(body);
+    add(footLeft);
+    add(footCenter);
+    add(footRight);
+    add(eyeLeft);
+    add(eyeRight);
+    add(pupilLeft);
+    add(pupilRight);
+    
+}
+
+function removeGhost(){
+    remove(head);
+    remove(body);
+    remove(footLeft);
+    remove(footCenter);
+    remove(footRight);
+    remove(eyeLeft);
+    remove(eyeRight);
+    remove(pupilLeft);
+    remove(pupilRight);
+    
+}
+
+function moveGhost(){
+    var posX = head.getX();
+    var posY = head.getY();
+    
+    if (posX+dx < HEAD_RADIUS){
+        changeOnReflection();
+        dx = -dx;
+    }
+    if (posX+dx>getWidth()-HEAD_RADIUS){
+        changeOnReflection();
+        dx = -dx;
+    }
+    if (posY+dy<HEAD_RADIUS){
+        changeOnReflection();
+        dy = -dy;
+    }
+    if (posY+4*HEAD_RADIUS/3+dy>getHeight()-OFFSET){
+        changeOnReflection();
+        dy = -dy;
+    }
+    
+    removeGhost();
+    createGhost(posX+dx, posY+dy, color);
+    drawGhost();
+
+}
+
+function changeOnReflection(){
+    color = Randomizer.nextColor();
+    dx = Randomizer.nextInt(startdx,enddx) * Math.sign(dx);
+    dy = Randomizer.nextInt(startdx,enddx) * Math.sign(dy);
+}
+
+function drawCircle(radius, color, posX, posY){
+    var circle = new Circle(radius);
+    circle.setPosition(posX, posY);
+    circle.setColor(color);
+    return circle;
+}
+
+function drawRectangle(width,height, color, posX, posY){
+    var rect = new Rectangle(width, height);
+    rect.setPosition(posX, posY);
+    rect.setColor(color);
+    return rect;
+}
+
+function gameOver(){
+    stopTimer(moveGhost);
+    stopTimer(moveBall);
+    mouseMoveMethod(pass);
+    mouseClickMethod(pass);
+    showMessage("Game Over!");
+}
+
+function gameReset(){
+    remove(ball);
+    removeGhost();
+    stopTimer(moveGhost);
+    stopTimer(moveBall);
+
+    var posX = Randomizer.nextInt(HEAD_RADIUS, getWidth()-HEAD_RADIUS);
+    var posY = HEAD_RADIUS;
+    color = Randomizer.nextColor();
+    createGhost(posX, posY, color);
+    drawGhost();
+    
+    setTimer(moveGhost, DELAY);
+    mouseMoveMethod(mouseMove);
+    mouseClickMethod(mouseClick);
+}
+
+function showMessage(txt){
+    var text = new Text(txt);
+    text.setColor(Color.red);
+    text.setPosition(getWidth()/2-2*text.getWidth()/3, getHeight()/2);
+    text.setFont("28pt Arial");
+    add(text);
+}
+
+function showScore(){
+    remove(scoreText);
+    scoreText = new Text(score);
+    scoreText.setFont("16pt Arial");
+    scoreText.setColor(Color.black);
+    scoreText.setPosition(getWidth()-scoreText.getWidth()-10, 
+                            getHeight()-5 );
+    add(scoreText);
+}
+
+function showLeft(){
+    remove(leftText);
+    leftText = new Text(ballsLeft);
+    leftText.setFont("16pt Arial");
+    leftText.setColor(Color.black);
+    leftText.setPosition(10, getHeight()- 5);
+    add(leftText);
+}
+
+function pass(){
+    var i = 0;
+    while (i<100){
+        i++;
+    }
+}
+
+
+    if (typeof start === 'function') {
+        start();
+    }
+};
+</script>
+
+</body>
+</html>

@@ -1,0 +1,301 @@
+
+<html>
+<head>
+<title>Breakout</title>
+
+<script src="https://ajax.googleapis.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+
+<script type="text/javascript" src="https://static.codehs.com/gulp/e0ca42a1ffe3827e1f4e87d672f73133399f9f95/chs-js-lib/chs.js"></script>
+
+
+<style>
+canvas {
+    border: 1px solid black;
+    display: inline-block;
+    vertical-align: top;
+}
+
+pre {
+    border: 1px solid black;
+    display: inline-block;
+    width: 400px;
+    height: 500px;
+    background-color: #F5F5F5;
+}
+</style>
+
+</head>
+
+<body>
+<h1>Breakout</h1>
+
+
+
+<canvas
+width="400"
+height="500"
+class="codehs-editor-canvas"></canvas>
+<!--<pre id="console"></pre>-->
+
+<script>
+window.onload = function() {
+
+    /* Constants for bricks */
+var NUM_ROWS = 8;
+var BRICK_TOP_OFFSET = 28;
+var BRICK_SPACING = 2;
+var NUM_BRICKS_PER_ROW = 10;
+var BRICK_HEIGHT = 10;
+var SPACE_FOR_BRICKS = getWidth() - (NUM_BRICKS_PER_ROW + 1) * BRICK_SPACING;
+var BRICK_WIDTH = SPACE_FOR_BRICKS / NUM_BRICKS_PER_ROW;
+
+/* Constants for ball and paddle */
+var PADDLE_WIDTH = 80;
+var PADDLE_HEIGHT = 15;
+var PADDLE_OFFSET = 10;
+var BALL_RADIUS = 15;
+
+/* Constants for speed */
+var DELAY = 20;
+var dx = 2;
+var dy = 5;
+
+/* Constant objects */
+var ball;
+var paddle;
+var line;  //top border
+
+/* Constants for score */
+var score = 0;
+var scoreText;
+var ballPrice = 10;
+var bricksLeft = NUM_ROWS * NUM_BRICKS_PER_ROW;
+var livesLeft = 3;
+var livesText;
+var gameOn = true;
+
+
+function start(){
+	initializeWall();
+	initializeBall();
+	initializePaddle();
+
+	mouseMoveMethod(movePaddle);
+	mouseClickMethod(paused);
+	setTimer(moveBall, DELAY);
+	
+}
+
+function initializeBall(){
+    ball = new Circle(BALL_RADIUS);
+    ball.setPosition(getWidth()/2, getHeight()/2);
+    add(ball);
+}
+
+function moveBall(){
+
+    checkCollisions();
+        
+    if (ball.getX()<BALL_RADIUS || ball.getX()>getWidth()-BALL_RADIUS){
+        dx = -dx;
+    }
+    if (ball.getY()>getHeight()-BALL_RADIUS){   // bottom
+        gameReset();
+    }
+    if (ball.getY()<BALL_RADIUS+BRICK_TOP_OFFSET){    //top
+        dy = -dy;
+    }
+    
+
+    ball.move(dx, dy);
+}
+
+function checkCollisions(){
+    var elemLeft = getElementAt(ball.getX()-BALL_RADIUS, ball.getY());
+    var elemRight = getElementAt(ball.getX()+BALL_RADIUS, ball.getY());
+    var elemTop = getElementAt(ball.getX(), ball.getY()-BALL_RADIUS);
+    var elemBottom = getElementAt(ball.getX(), ball.getY()+BALL_RADIUS);
+    
+    if (elemTop != null && elemTop != line){
+        dy = -dy;
+        if(elemBottom != paddle){
+            remove(elemTop);
+            score += ballPrice;
+            bricksLeft --;
+            showScore();
+        }
+    }
+    
+    if (elemBottom != null){
+        dy = -dy;
+        if(elemBottom != paddle){
+            remove(elemBottom);
+            score += ballPrice;
+            bricksLeft --;
+            showScore();
+        }
+    }
+    
+    if (elemLeft != null){
+        dx = -dx;
+        if(elemLeft != paddle){
+            remove(elemLeft);
+            score += ballPrice;
+            bricksLeft --;
+            showScore();
+        }
+    }
+    if (elemRight != null){
+        dx = -dx;
+        if(elemRight != paddle){
+            remove(elemRight);
+            score += ballPrice;
+            bricksLeft --;
+            showScore();
+        }
+    }
+    
+    if (bricksLeft<1){
+        gameOverWin();
+    }
+}
+
+function initializePaddle(){
+    paddle = new Rectangle(PADDLE_WIDTH, PADDLE_HEIGHT);
+    paddle.setPosition(getWidth()/2-PADDLE_WIDTH/2,
+                       getHeight()-PADDLE_OFFSET-PADDLE_HEIGHT);
+    add(paddle);
+}
+
+function movePaddle(e){
+    var paddleX = paddle.getX();
+    var paddleY = paddle.getY();
+    if(e.getX()<PADDLE_WIDTH/2){
+        paddleX=0;
+    }else if(e.getX()>getWidth()-PADDLE_WIDTH/2){
+        paddleX=getWidth()-PADDLE_WIDTH;
+    }else{
+        paddleX = e.getX()-PADDLE_WIDTH/2;
+    }
+    paddle.setPosition(paddleX, paddleY);
+}
+
+function initializeWall(){
+    var posX;
+    var posY;
+    var row;
+    
+    showScore();
+    showLives();
+    
+    line = new Line(0, BRICK_TOP_OFFSET-3, getWidth(), BRICK_TOP_OFFSET-3);
+    line.setColor(Color.black);
+    add(line);
+    
+    for (var i=0; i<NUM_ROWS; i++){
+        for (var j=0; j<NUM_BRICKS_PER_ROW; j++){
+            posX = BRICK_SPACING + j*(BRICK_WIDTH+BRICK_SPACING);
+            posY = BRICK_TOP_OFFSET + i*(BRICK_HEIGHT+BRICK_SPACING);
+            row = i+1;
+            makeBrick(posX, posY, row);
+        }
+    }
+}
+
+function makeBrick(posX, posY, row){
+    var brick = new Rectangle(BRICK_WIDTH, BRICK_HEIGHT);
+    brick.setPosition(posX, posY);
+    brick.setColor(chooseColor(row));
+    add(brick);
+}
+
+function chooseColor(row){
+    var color;
+    if (row%8==1 || row%8==2){
+        color = Color.red;
+    }else if (row%8==3 || row%8==4){
+        color = Color.orange;
+    }else if (row%8==5 || row%8==6){
+        color = Color.green;
+    }else{
+        color = Color.blue;
+    }
+    return color;
+}
+
+function gameReset(){
+    livesLeft --;
+    if (livesLeft<1){
+        gameOverLose();
+    }
+    showLives();
+    paused(); 
+    ball.setPosition(getWidth()/2, getHeight()/2);
+    
+}
+
+function paused(e){
+    if (gameOn){
+        gameOn = false;
+        stopTimer(moveBall);
+    }else{
+        gameOn = true;
+        setTimer(moveBall, DELAY);
+    }
+}
+
+function gameOverWin(){
+    stopTimer(moveBall);
+    message("Game Over! You WIN!");
+    mouseClickMethod(pass);
+}
+
+function gameOverLose(){
+    stopTimer(moveBall);
+    message("Game Over! You LOSE!");
+    mouseClickMethod(pass);
+}
+
+function message(txt){
+    var msg = new Text(txt);
+    msg.setFont("24pt Arial");
+    msg.setColor(Color.red);
+    msg.setPosition(getWidth()/2-msg.getWidth()/2, getHeight()/2-msg.getHeight());
+    add(msg);
+}
+
+function showScore(){
+    remove(scoreText);
+    scoreText = new Text(score);
+    scoreText.setFont("16pt Arial");
+    scoreText.setColor(Color.black);
+    scoreText.setPosition(getWidth()-scoreText.getWidth()-10, 
+                            scoreText.getHeight());
+    add(scoreText);
+}
+
+function showLives(){
+    remove(livesText);
+    livesText = new Text(livesLeft);
+    livesText.setFont("16pt Arial");
+    livesText.setColor(Color.black);
+    livesText.setPosition(10, livesText.getHeight());
+    add(livesText);
+}
+
+function pass(){
+    var i = 0;
+    while (i<100){
+        i++;
+    }
+}
+
+
+    if (typeof start === 'function') {
+        start();
+    }
+};
+</script>
+
+</body>
+</html>
