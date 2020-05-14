@@ -21,8 +21,8 @@ space key.</p>
 For each destroyed brick points are awarded. A ball should not fly down, otherwise life is lost. In total, the player 
 has three lives. Control is carried out with the mouse. Pause/Continuation - mouse click.</p><br><br>
 
-The games was written in the CodeHS JavaScript Library in the CodeHS editor, and then, using the special CodeHS 
-library, it was automatically converted for external use.<br>
+The games were written using CodeHS JavaScript Library in the CodeHS editor, and then by the special CodeHS library 
+they were automatically converted for external use. <br>
 
 The full documentation of editor - by visiting codehs.com/docs <br>
 
